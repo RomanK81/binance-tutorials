@@ -35,12 +35,16 @@ var candleSeries = chart.addCandlestickSeries({
 	wickUpColor: 'rgba(255, 144, 0, 1)',
 });
 
-fetch('http://localhost:5000/history')
+fetch('http://localhost:5000/history',{ mode: 'cors'})
 	.then((r) => r.json())
 	.then((response) => {
 		console.log(response)
 
 		candleSeries.setData(response);
+	})
+	.catch((error) => {
+		console.log(error)
+		//reject(error)
 	})
 
 
