@@ -1,6 +1,17 @@
+// https://www.cssscript.com/financial-chart/
+// https://jsfiddle.net/TradingView/gemn0ud6/
+// https://www.tradingview.com/lightweight-charts/
 var chart = LightweightCharts.createChart(document.getElementById('chart'), {
 	width: 1000,
   	height: 500,
+	rightPriceScale: {
+		visible: true,
+    	borderColor: 'rgba(197, 203, 206, 1)',
+	},
+	leftPriceScale: {
+		visible: true,
+    	borderColor: 'rgba(197, 203, 206, 1)',
+	},
 	layout: {
 		backgroundColor: '#000000',
 		textColor: 'rgba(255, 255, 255, 0.9)',
@@ -16,13 +27,13 @@ var chart = LightweightCharts.createChart(document.getElementById('chart'), {
 	crosshair: {
 		mode: LightweightCharts.CrosshairMode.Normal,
 	},
-	priceScale: {
-		borderColor: 'rgba(197, 203, 206, 0.8)',
-	},
 	timeScale: {
 		borderColor: 'rgba(197, 203, 206, 0.8)',
 		timeVisible: true,
 		secondsVisible: false,
+	},
+	handleScroll: {
+		vertTouchDrag: false,
 	},
 });
 
@@ -35,33 +46,66 @@ var candleSeries = chart.addCandlestickSeries({
 	wickUpColor: 'rgba(255, 144, 0, 1)',
 });
 
-fetch('http://localhost:5000/history',{ mode: 'cors'})
+var lineSeries = chart.addLineSeries({
+	color: 'rgba(4, 111, 232, 1)',
+	lineWidth: 2,
+	priceScaleId: 'left'
+});
+
+fetch('http://' + document.domain + ':' + location.port + '/history',{ mode: 'cors'})
 	.then((r) => r.json())
 	.then((response) => {
 		console.log(response)
 
-		candleSeries.setData(response);
+		candleSeries.setData(response['candlesticks']);
+
+		lineSeries.setData(response['oiticks']);
+
+		chart.timeScale().fitContent();
 	})
 	.catch((error) => {
 		console.log(error)
 		//reject(error)
 	})
 
+var socket = io.connect('http://' + document.domain + ':' + location.port + '/binance');
 
-var binanceSocket = new WebSocket("wss://stream.binance.com:9443/ws/btcusdt@kline_15m");
+//receive details from server
+socket.on('stream', function (event) {
+	var message = JSON.parse(event);
 
-binanceSocket.onmessage = function (event) {	
-	var message = JSON.parse(event.data);
+	if(!message.data)
+		return;
 
-	var candlestick = message.k;
+	if(message.data.e == 'kline'){
+		var candlestick = message.data.k;
 
-	console.log(candlestick)
+		candleSeries.update({
+			time: candlestick.t / 1000,
+			open: candlestick.o,
+			high: candlestick.h,
+			low: candlestick.l,
+			close: candlestick.c
+		})
+	}
 
-	candleSeries.update({
-		time: candlestick.t / 1000,
-		open: candlestick.o,
-		high: candlestick.h,
-		low: candlestick.l,
-		close: candlestick.c
-	})
-}
+})
+
+// var binanceSocket = new WebSocket("wss://stream.binance.com:9443/ws/btcusdt@kline_15m");
+
+// binanceSocket.onmessage = function (event) {	
+// 	var message = JSON.parse(event.data);
+
+// 	var candlestick = message.k;
+
+// 	console.log(candlestick)
+
+// 	candleSeries.update({
+// 		time: candlestick.t / 1000,
+// 		open: candlestick.o,
+// 		high: candlestick.h,
+// 		low: candlestick.l,
+// 		close: candlestick.c
+// 	})
+// }
+//
