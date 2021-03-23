@@ -27,14 +27,27 @@
                 {% endif %}
             {% endwith %}
 
-            <form action="/buy" method="post">
+            <form action="/order" method="post">
                 <input type="text" id="quantity" name="quantity" placeholder="eg. 0.001" />
                 <select id="symbol" name="symbol">
                     {% for symbol in symbols %}
                         <option>{{ symbol['symbol'] }}</option>
                     {% endfor %}
                 </select>
-                <input type="submit" name="buy" value="buy" />
+                <select id="order_type" name="order_type">
+                    <option value="BUY">Buy</option>
+                    <option value="SELL">Sell</option>
+                </select>
+                <select id="market_type" name="market_type">
+                    <option value="MARKET">MARKET</option>
+                    <option value="LIMIT">LIMIT</option>
+                    <option value="STOP_LOSS">STOP_LOSS</option>
+                    <option value="STOP_LOSS_LIMIT">STOP_LOSS_LIMIT</option>
+                    <option value="TAKE_PROFIT">TAKE_PROFIT</option>
+                    <option value="TAKE_PROFIT_LIMIT">TAKE_PROFIT_LIMIT</option>
+                    <option value="LIMIT_MAKER">LIMIT_MAKER</option>
+                </select>
+                <input type="submit" name="submit" value="Submit" />
             </form>
         </div>
 

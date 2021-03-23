@@ -10,6 +10,7 @@ from binance.enums import *
 from binance.client import Client
 from binance.enums import *
 import time, threading
+import json
 
 from unicorn_binance_websocket_api.unicorn_binance_websocket_api_manager import BinanceWebSocketApiManager
 import logging
@@ -55,7 +56,7 @@ for channel in channels:
 def print_stream_data_from_stream_buffer(binance_websocket):
     print("waiting 5 seconds, then we start flushing the stream_buffer")
     time.sleep(5)
-    _get_open_interest(10)
+    threading.Timer(900, _get_open_interest).start()
     while True:
         if binance_websocket.is_manager_stopping():
             exit(0)
@@ -104,7 +105,10 @@ def index():
     #     worker_kline_thr.start()
 
     exchange_info = client.get_exchange_info()
+
     symbols = exchange_info['symbols']
+    btcusdt_idx = next(i for i, elem in enumerate(symbols) if elem['symbol'] =='BTCUSDT')
+    symbols.insert(0, symbols.pop(btcusdt_idx))
 
     return render_template('index.html', title=title, my_balances=balances[:5], symbols=symbols)
 
@@ -118,17 +122,22 @@ def binance_connect():
         print("Starting Thread")
         worker_thread.start()
 
-
-@app.route('/buy', methods=['POST'])
+'''
+https://github.com/binance/binance-spot-api-docs/blob/master/rest-api.md
+Find : New order
+https://academy.binance.com/en/articles/what-is-a-limit-order
+'''
+@app.route('/order', methods=['POST'])
 @cross_origin()
-def buy():
+def order():
     print(request.form)
     try:
         order = client.create_order(
-            symbol = request.form['symbol'], 
-            side = SIDE_BUY,
-            type = ORDER_TYPE_MARKET,
-            quantity = request.form['quantity'])
+            symbol = request.form['symbol'],
+            side = request.form['order_type'],
+            type = request.form['market_type'],
+            quantity = request.form['quantity'],
+            recvWindow = 20000)
     except Exception as e:
         flash(e.message, "error")
 
@@ -163,7 +172,7 @@ def history():
             "close": data[4]
         })
 
-    oi = [*bf_client.get_open_interest_stats(symbol="BTCUSDT", period='1h',limit=500)]
+    oi = [*bf_client.get_open_interest_stats(symbol="BTCUSDT", period='2h',limit=500)]
 
     # oiticks = []
     # for i in oi:
@@ -182,29 +191,30 @@ def history():
         response.headers.add('Access-Control-Allow-Origin', request.environ['HTTP_ORIGIN'] )
     return response
 
-def _get_open_interest(sleep=0):
-    global  bf_client
-    time.sleep(sleep)
-    oi = [*bf_client.get_open_interest_stats(symbol="BTCUSDT", period='1m')]
+def _get_open_interest(sleep=900):
+    #global  bf_client
+    #time.sleep(sleep)
+    #binf_client  = RequestClient(api_key=config.API_KEY, secret_key=config.API_SECRET, url="https://fapi.binance.com")
+    oi = [*bf_client.get_open_interest_stats(symbol="BTCUSDT", period='15m', limit=1)]
 
     data =_get_ai_data(oi)
 
-    stream = jsonify({
-        "data":{
-            "e":"oi",
-            "oiticks": data
-        }
-    })
+    my_dict = {}
+    my_dict["data"]={}
+    my_dict["data"]["e"]='oi'
+    my_dict["data"]["oiticks"] = data
+
+    stream = json.dumps(my_dict)
 
     socketio.emit('stream', stream, namespace='/binance')
-    threading.Timer(100, _get_open_interest).start()
+    threading.Timer(sleep, _get_open_interest).start()
 
 def _get_ai_data(oi):
     oiticks = []
     for i in oi:
         oiticks.append({
             "time": int(i.timestamp[:-3]),
-            "value": i.sumOpenInterestValue,
+            "value": i.sumOpenInterest,
         })
     return oiticks
 

@@ -1,8 +1,13 @@
 // https://www.cssscript.com/financial-chart/
-// https://jsfiddle.net/TradingView/gemn0ud6/
+
 // https://www.tradingview.com/lightweight-charts/
+// https://jsfiddle.net/TradingView/gemn0ud6/
+// https://jsfiddle.net/BlackLabel/zrd3meyq/1/
+
+// https://www.amcharts.com/demos/live-order-book-depth-chart/
+// https://data.bitcoinity.org/markets/price_volume/all/USD?r=week&t=lb
 var chart = LightweightCharts.createChart(document.getElementById('chart'), {
-	width: 1000,
+	width: 1500,
   	height: 500,
 	rightPriceScale: {
 		visible: true,
@@ -87,6 +92,14 @@ socket.on('stream', function (event) {
 			low: candlestick.l,
 			close: candlestick.c
 		})
+	}
+	if(message.data.e == 'oi'){
+		message.data.oiticks.forEach(element => {
+			lineSeries.update({
+				time: element.time,
+				value: element.value
+			})
+		});
 	}
 
 })
