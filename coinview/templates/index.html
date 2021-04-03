@@ -1,9 +1,11 @@
+<!DOCTYPE html>
 <html>
     <head>
         <title>Coinview</title>
         <script src="//code.jquery.com/jquery-3.3.1.min.js"></script>
         <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/1.4.5/socket.io.min.js"></script>
+        <link rel="stylesheet" href="chart.css">
     </head>
 
     <body>
@@ -34,11 +36,11 @@
                         <option>{{ symbol['symbol'] }}</option>
                     {% endfor %}
                 </select>
-                <select id="order_type" name="order_type">
+                <select id="side" name="side">
                     <option value="BUY">Buy</option>
                     <option value="SELL">Sell</option>
                 </select>
-                <select id="market_type" name="market_type">
+                <select id="order_type" name="order_type">
                     <option value="MARKET">MARKET</option>
                     <option value="LIMIT">LIMIT</option>
                     <option value="STOP_LOSS">STOP_LOSS</option>
@@ -81,22 +83,7 @@
             </table>
 
         </div>
-
-
-        <script>
-        //var binanceSocket = new WebSocket("wss://stream.binance.com:9443/ws/btcusdt@trade");
-
-        //var tradeDiv = document.getElementById('trades')
-
-        // binanceSocket.onmessage = function (event) {
-        //     console.log(event.data);
-
-        //     var messageObject = JSON.parse(event.data)   
-
-        //     tradeDiv.append(messageObject.p)
-                 
-        // }
-        </script>
         <script src="{{ url_for('static', filename='chart.js') }}"></script> 
     </body>
+
 </html>

@@ -1,5 +1,12 @@
+#import datetime
+
+import dateparser
+import pytz
 import config, csv
 from binance.client import Client
+import dateutil.relativedelta
+from dateutil import parser
+from datetime import datetime
 
 client = Client(config.API_KEY, config.API_SECRET)
 
@@ -8,10 +15,31 @@ client = Client(config.API_KEY, config.API_SECRET)
 # for price in prices:
 #     print(price)
 
-csvfile = open('2020_15minutes.csv', 'w', newline='')
+csvfile = open('2010_07_19_to_2015_01_08_minutes.csv', 'w', newline='')
 candlestick_writer = csv.writer(csvfile, delimiter=',')
 
-candlesticks = client.get_historical_klines("BTCUSDT", Client.KLINE_INTERVAL_15MINUTE, "1 Jan, 2020", "12 Jul, 2020")
+# data_end = f"{datetime.datetime.utcnow():%d %B, %Y}"
+# start_ts = f"{(datetime.datetime.utcnow() - dateutil.relativedelta.relativedelta(months=1)):%d %B, %Y}"
+
+first_time = parser.parse("Jun 19 2017 00:00PM")
+start_ts = f"{first_time:%b %d %Y %I:%M%p}"
+data_end = f"{(first_time + dateutil.relativedelta.relativedelta(minutes=1000)):%b %d %Y %I:%M%p}"
+
+'''
+epoch = datetime.utcfromtimestamp(0).replace(tzinfo=pytz.utc)
+# parse our date string
+d = dateparser.parse("Jun 19 2010 00:00AM")
+# if the date is not timezone aware apply UTC timezone
+if d.tzinfo is None or d.tzinfo.utcoffset(d) is None:
+    d = d.replace(tzinfo=pytz.utc)
+
+# return the difference in time
+sec = int((d - epoch).total_seconds() * 1000.0)
+'''
+
+candlesticks = client.get_historical_klines("BTCUSDT", Client.KLINE_INTERVAL_1HOUR, start_str=start_ts, end_str=data_end)
+
+#candlesticks = client.get_historical_klines("BTCUSDT", Client.KLINE_INTERVAL_15MINUTE, "1 Jan, 2020", "12 Jul, 2020")
 #candlesticks = client.get_historical_klines("BTCUSDT", Client.KLINE_INTERVAL_1DAY, "1 Jan, 2020", "12 Jul, 2020")
 #candlesticks = client.get_historical_klines("BTCUSDT", Client.KLINE_INTERVAL_1DAY, "1 Jan, 2017", "12 Jul, 2020")
 

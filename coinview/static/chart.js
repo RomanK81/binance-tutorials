@@ -6,7 +6,10 @@
 
 // https://www.amcharts.com/demos/live-order-book-depth-chart/
 // https://data.bitcoinity.org/markets/price_volume/all/USD?r=week&t=lb
-var chart = LightweightCharts.createChart(document.getElementById('chart'), {
+// var container = document.createElement('chart');
+// document.body.appendChild(container);
+var container = document.getElementById('chart')
+var chart = LightweightCharts.createChart(container, {
 	width: 1500,
   	height: 500,
 	rightPriceScale: {
@@ -101,8 +104,63 @@ socket.on('stream', function (event) {
 			})
 		});
 	}
-
 })
+
+function businessDayToString(UNIX_timestamp) {
+	var a = new Date(UNIX_timestamp * 1000);
+	var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+	var year = a.getFullYear();
+	var month = months[a.getMonth()];
+	var date = a.getDate();
+	var hour = a.getHours();
+	var min = a.getMinutes();
+	var sec = a.getSeconds();
+	var time = date + ' ' + month + ' ' + year + ' ' + hour + ':' + min + ':' + sec ;
+	return time;
+}
+
+var toolTipWidth = 80;
+var toolTipHeight = 80;
+var toolTipMargin = 15;
+
+var toolTip = document.createElement('div');
+toolTip.className = 'floating-tooltip-2';
+container.appendChild(toolTip);
+
+// update tooltip
+chart.subscribeCrosshairMove(function(param) {
+		if (param.point === undefined || !param.time || param.point.x < 0 || param.point.x > container.clientWidth || param.point.y < 0 || param.point.y > container.clientHeight) {
+			toolTip.style.display = 'none';
+		} else {
+			const dateStr = businessDayToString(param.time);
+			toolTip.style.display = 'block';
+			var price = param.seriesPrices.get(lineSeries);
+			var priceK = param.seriesPrices.get(candleSeries);
+
+			toolTip.innerHTML = 
+			'<div style="color: #009688">'+
+				'Binance Kl/OI</div>'+
+			'<div style="font-size: 24px; margin: 4px 0px; color: #21384d">'+
+			 	Math.round(100 * price) / 100 +
+			 '</div>'+
+			 '<div style="font-size: 24px; margin: 4px 0px; color: #21384d">'+
+			 	Math.round(100 * priceK.close) / 100 +
+		 	'</div>'+
+			 '<div style="color: #21384d">' +
+			  	dateStr +
+			 '</div>';
+
+			var coordinate = lineSeries.priceToCoordinate(price);
+			var shiftedCoordinate = param.point.x - 50;
+			if (coordinate === null) {
+				return;
+			}
+			shiftedCoordinate = Math.max(0, Math.min(container.clientWidth - toolTipWidth, shiftedCoordinate));
+			var coordinateY = coordinate - toolTipHeight - toolTipMargin > 0 ? coordinate - toolTipHeight - toolTipMargin : Math.max(0, Math.min(container.clientHeight - toolTipHeight - toolTipMargin, coordinate + toolTipMargin));
+			toolTip.style.left = shiftedCoordinate + 'px';
+			toolTip.style.top = coordinateY + 'px';
+		}
+});
 
 // var binanceSocket = new WebSocket("wss://stream.binance.com:9443/ws/btcusdt@kline_15m");
 
