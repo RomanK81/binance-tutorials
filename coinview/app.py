@@ -1,5 +1,5 @@
 from __future__ import print_function
-from flask import Flask, render_template, request, flash, redirect, jsonify
+from flask import Flask, json, render_template, request, flash, redirect, jsonify, make_response
 from flask_cors import CORS, cross_origin
 from flask_socketio  import SocketIO
 from waitress import serve
@@ -59,15 +59,17 @@ https://academy.binance.com/en/articles/what-is-a-limit-order
 def order():
     form_dict = request.form.to_dict()#flat=False
     logging.info(f'Order: {form_dict}')
-    res = client.create_order(**form_dict)
-    logging.info(f'Result Order: {res}')
+    data = client.create_order(**form_dict)
+    logging.info(f'Result Order: {data}')
 
-    if(isinstance(res, str)):
-        flash(res, "error")
-    else:
-        flash("Success", 'info')
+    return make_response(jsonify(data.toJson()), 200)
 
-    return redirect('/')
+    # if(isinstance(res, str)):
+    #     flash(res, "error")
+    # else:
+    #     flash("Success", 'info')
+
+    #return redirect('/')
 
 @app.route('/history')
 #@cross_origin()

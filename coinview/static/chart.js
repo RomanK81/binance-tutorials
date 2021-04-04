@@ -8,6 +8,7 @@
 // https://data.bitcoinity.org/markets/price_volume/all/USD?r=week&t=lb
 // var container = document.createElement('chart');
 // document.body.appendChild(container);
+
 var container = document.getElementById('chart')
 var chart = LightweightCharts.createChart(container, {
 	width: 1500,
@@ -180,3 +181,63 @@ chart.subscribeCrosshairMove(function(param) {
 // 	})
 // }
 //
+
+$(function() {
+	// set up form validation here
+	$("form").validate();
+ });
+
+ var markers = [];
+
+ $("form").on("submit", function (e) {
+    var dataString = $(this).serialize();
+
+    $.ajax({
+      type: "POST",
+      url: "/order",
+      data: dataString,
+	  dataType:"json",
+      success: function (data) {
+		var $response=$.parseJSON(data);
+
+		if(!$response.success){
+			markers.push({
+				time: new Date().getTime(),
+				position: 'aboveBar',
+				color: 'red',
+				shape: 'circle',
+				text: `${$response.data}`,
+				size: 2,
+			})
+		}else{
+			var order = $response.data;
+			markers.push({
+				time: order.transactTime,
+				position: order.side == 'SELL' ? 'aboveBar' : 'belowBar',
+				color: order.side == 'SELL' ? 'green': '#2196F3',
+				shape: order.side == 'SELL' ? 'arrowDown' : 'arrowUp',
+				text: `${order.side} # ${order.executedQty} $ ${order.price}`,
+				size: 2,
+			})
+		}
+
+		candleSeries.setMarkers(markers)
+
+		// $("#contact_form").html("<div id='message'></div>");//arrowDown,belowBar
+        // $("#message")
+        //   .html("<h2>Contact Form Submitted!</h2>")
+        //   .append("<p>We will be in touch soon.</p>")
+        //   .hide()
+        //   .fadeOut(1500, function () {
+        //     $("#message").append(
+        //       "<img id='checkmark' src='images/check.png' />"
+        //     );
+        //   });
+      },
+	  error: function(errorThrown) {
+		console.log(errorThrown);
+	  }
+    });
+
+    e.preventDefault();
+});

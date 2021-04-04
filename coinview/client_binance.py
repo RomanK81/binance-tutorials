@@ -5,9 +5,18 @@ from binance.exceptions import BinanceAPIException, BinanceOrderException
 from binance_f import RequestClient
 from binance_f.constant.test import *
 from binance_f.base.printobject import *
-import math 
+import random
+import math
 import json
 import config
+import datetime
+
+class Result():
+    def __init__(self, data, is_success=False):
+        self.success = is_success
+        self.data = data
+    def toJson(self):
+        return json.dumps(self, default=lambda o: o.__dict__)
 
 class ClientBinance():
 
@@ -47,8 +56,8 @@ class ClientBinance():
             self.logger.info(current_price)
             price = float(current_price['price'])
 
-        if('percentage' in data and data['percentage'] > 0):
-            percentage = data['percentage']
+        if('percentage' in data and data['percentage'] != '0'):
+            percentage = int(data['percentage'])
             if symbol.endswith('USDT'):
                 asset = symbol[:-4]
                 base = 'USDT'
@@ -64,9 +73,9 @@ class ClientBinance():
 
 
             if side == 'BUY':
-                quantity = float(base_balance['free']) *  float(percentage)/float(price)*0.9995
+                quantity = float(base_balance['free']) *  float(percentage) / float(price) #*0.9995
             else:
-                quantity = float(asset_balance['free']) * float(percentage)*0.9995
+                quantity = float(asset_balance['free']) * float(percentage) / 100.0 #*0.9995
 
         filters = self.client.get_symbol_info(symbol)['filters']
         tick_size = float(list(filter(lambda dum: dum['filterType'] == 'PRICE_FILTER', filters))[0]['tickSize'])
@@ -77,14 +86,27 @@ class ClientBinance():
         try:
             if config.TEST:
                 self.logger.info('Test order!')
-                return self._make_order(symbol, side, order_type, quantity, price, tick_size, self.client.create_test_order)
+                self._make_order(symbol, side, order_type, quantity, price, tick_size, self.client.create_test_order)
+                return Result({
+                    "symbol": symbol,
+                    "orderId": int(random.random()*100),
+                    "clientOrderId": "test_id",
+                    "transactTime": int((datetime.datetime.utcnow()- datetime.datetime(1970,1,1)).total_seconds()),
+                    "price": str(price),
+                    "origQty": str(quantity),
+                    "executedQty": str(quantity),
+                    "status": "FILLED",
+                    "timeInForce": "GTC",
+                    "type": order_type,
+                    "side": side
+                }, True)
 
-            return self._make_order(symbol, side, order_type, quantity, price, tick_size, self.client.create_order)
+            return Result(self._make_order(symbol, side, order_type, quantity, price, tick_size, self.client.create_order), True)
 
         except BinanceAPIException as e:
-            return e.message
+            return Result(e.message)
         except BinanceOrderException as e:
-            return e.message
+            return Result(e.message)
 
     #self.client.create_test_order
     def _make_order(self, symbol, side, order_type, quantity, price, tick_size, create_order):
